@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hermes WSL Panel</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<!-- 启动页 -->
+<div class="splash-screen" id="splashScreen">
+    <img class="splash-img" src="photos/启动.png" alt="">
+</div>
+<!-- 主题背景层 -->
+<div class="theme-bg" id="themeBg"></div>
+<div id="app">
+
+    <!-- 菜单栏（下拉菜单） -->
+    <div class="menubar">
+        <div class="menubar-left">
+
+            <!-- 文件 -->
+            <div class="dropdown">
+                <button class="menu-btn dropdown-trigger">文件</button>
+                <div class="dropdown-menu">
+                    <button class="dropdown-item" data-action="new-session">新建会话</button>
+                    <div class="dropdown-divider"></div>
+                    <button class="dropdown-item" data-action="refresh">刷新会话列表</button>
+                </div>
+            </div>
+
+            <!-- 指令 -->
+            <button class="menu-btn" id="commandMenuBtn">指令</button>
+
+            <!-- 工具 -->
+            <div class="dropdown">
+                <button class="menu-btn dropdown-trigger">工具</button>
+                <div class="dropdown-menu">
+                    <button class="dropdown-item" data-action="mcp">MCP 游览</button>
+                    <button class="dropdown-item" data-action="skills-browse">Skills 游览</button>
+                    <div class="dropdown-divider"></div>
+                    <button class="dropdown-item" data-action="log-viewer">日志查看器</button>
+                    <button class="dropdown-item" data-action="diagnose">网络诊断</button>
+                </div>
+            </div>
+
+            <!-- 视图 -->
+            <div class="dropdown">
+                <button class="menu-btn dropdown-trigger">视图</button>
+                <div class="dropdown-menu">
+                    <button class="dropdown-item" data-action="theme-light">亮色主题</button>
+                    <button class="dropdown-item" data-action="theme-dark">暗色主题</button>
+                    <button class="dropdown-item" data-action="theme-theme">主题色</button>
+                    <div class="dropdown-divider"></div>
+                    <button class="dropdown-item" data-action="font-up">字号增大</button>
+                    <button class="dropdown-item" data-action="font-down">字号减小</button>
+                </div>
+            </div>
+
+            <!-- 帮助 -->
+            <div class="dropdown">
+                <button class="menu-btn dropdown-trigger">帮助</button>
+                <div class="dropdown-menu">
+                    <button class="dropdown-item" data-action="shortcuts">快捷键列表</button>
+                    <div class="dropdown-divider"></div>
+                    <button class="dropdown-item" data-action="usage">软件使用方法</button>
+                    <button class="dropdown-item" data-action="check-update">检查更新</button>
+                    <div class="dropdown-divider"></div>
+                    <button class="dropdown-item" data-action="about">关于我们</button>
+                </div>
+            </div>
+
+        </div>
+        <div class="menubar-right">
+            <div class="font-control" title="调整字号">
+                <button class="font-btn" data-dir="minus">-</button>
+                <span class="font-value" id="fontDisplay">14</span>
+                <button class="font-btn" data-dir="plus">+</button>
+            </div>
+            <div class="theme-control">
+                <button class="theme-btn active" data-theme="light">亮</button>
+                <button class="theme-btn" data-theme="dark">暗</button>
+                <button class="theme-btn" data-theme="theme">主题</button>
+            </div>
+            <button class="wsl-btn" id="wslBtn">启动 WSL</button>
+            <button class="refresh-status-btn" id="refreshStatusBtn" title="刷新">&#x21bb;</button>
+        </div>
+    </div>
+
+    <!-- Profile 条 -->
+    <div class="profile-bar">
+        <div class="profile-tabs" id="profileTabs"></div>
+        <div class="profile-bar-right">
+            <button class="profile-action-btn secondary" id="manageProfileBtn">管理</button>
+            <button class="profile-action-btn" id="addProfileBtn">新建</button>
+        </div>
+    </div>
+
+    <!-- 主内容 -->
+    <div class="main-content">
+        <!-- 左栏: Skills (35%) -->
+        <div class="left-panel" id="leftPanel">
+            <div class="skills-section" id="skillsSection">
+                <div class="section-header">
+                    <span class="section-title">Skills</span>
+                    <div class="skills-toggle">
+                        <button class="toggle-btn active" data-view="category">类别</button>
+                        <button class="toggle-btn" data-view="alpha">顺序</button>
+                    </div>
+                </div>
+                <div class="section-body" id="skillsBody"></div>
+            </div>
+        </div>
+
+        <!-- 拖拽手柄 -->
+        <div class="drag-handle" id="dragHandle"></div>
+
+        <!-- 右栏: 会话列表 (65%) -->
+        <div class="right-panel" id="rightPanel">
+            <button class="new-session-btn" id="newSessionBtn">新建会话</button>
+            <div class="sort-bar">
+                <div class="sort-buttons">
+                    <button class="sort-btn active" data-sort="ended_at">最近对话</button>
+                    <button class="sort-btn" data-sort="started_at">创建时间</button>
+                    <button class="sort-btn" data-sort="message_count">对话长度</button>
+                </div>
+                <div class="search-box">
+                    <input type="text" class="search-input" id="searchInput" placeholder="搜索对话...">
+                    <button class="search-action-btn" id="searchConfirmBtn">&check;</button>
+                    <button class="search-action-btn" id="searchRefreshBtn" title="刷新会话列表">&#x21bb;</button>
+                </div>
+            </div>
+            <div class="session-list" id="sessionList"></div>
+            <div class="session-loading" id="sessionLoading">加载会话列表...</div>
+        </div>
+    </div>
+
+    </div>
+</div>
+
+<!-- ======================== 弹窗 ======================== -->
+
+<!-- 首次设置向导 -->
+<div class="modal-overlay" id="setupModal">
+    <div class="modal-content modal-sm">
+        <div class="modal-header"><span>首次设置</span></div>
+        <div class="modal-body" id="setupBody">
+            <p style="font-size:13px;margin-bottom:12px;">欢迎使用 Hermes WSL Panel！</p>
+            <p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px;">首次启动需要检测 Hermes 的位置。<br>请确保 WSL 已安装且 Hermes 已在 WSL 中配置好。</p>
+            <div id="setupStatusArea">
+                <p id="setupStatusText" style="font-size:12px;color:var(--text-secondary);">点击下方按钮开始检测</p>
+            </div>
+            <div id="setupResultArea" style="display:none;margin-top:8px;">
+                <div style="background:var(--bg-alt);border-radius:6px;padding:10px;margin-bottom:12px;">
+                    <p style="font-size:11px;color:var(--text-secondary);margin-bottom:2px;">Hermes CLI 路径</p>
+                    <p id="setupCliPath" style="font-size:12px;font-family:monospace;word-break:break-all;"></p>
+                    <p style="font-size:11px;color:var(--text-secondary);margin-top:6px;margin-bottom:2px;">配置目录</p>
+                    <p id="setupHomePath" style="font-size:12px;font-family:monospace;word-break:break-all;"></p>
+                    <p style="font-size:11px;color:var(--text-secondary);margin-top:6px;margin-bottom:2px;">版本</p>
+                    <p id="setupVersion" style="font-size:12px;"></p>
+                </div>
+                <div style="display:flex;gap:8px;justify-content:flex-end;">
+                    <button class="modal-confirm secondary" id="setupRedetectBtn" style="background:var(--bg-alt);color:var(--text);border:1px solid var(--border);">重新检测</button>
+                    <button class="modal-confirm" id="setupConfirmBtn">确认并启动</button>
+                </div>
+            </div>
+            <div id="setupErrorArea" style="display:none;margin-top:8px;">
+                <p id="setupErrorText" style="font-size:12px;color:#EF4444;"></p>
+                <button class="modal-confirm" id="setupRetryBtn" style="margin-top:10px;">重试</button>
+            </div>
+            <div id="setupDetectingArea" style="display:none;margin-top:12px;">
+                <p style="font-size:12px;color:var(--text-secondary);">正在检测，请稍候...</p>
+            </div>
+            <div id="setupStartArea">
+                <button class="modal-confirm" id="setupDetectBtn" style="width:100%;">检测 Hermes 位置</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 关于 -->
+<div class="modal-overlay hidden" id="aboutModal">
+    <div class="modal-content modal-sm">
+        <div class="modal-header"><span>关于我们</span><button class="modal-close" data-modal="aboutModal">&times;</button></div>
+        <div class="modal-body">
+            <p><strong>版本：</strong>v1.0</p>
+            <p><strong>作者：</strong>玉衡飞雪</p>
+            <p><strong>联系方式：</strong>1205638494@qq.com</p>
+            <p style="margin-top:12px;"><strong>支持作者：</strong></p>
+            <img src="photos/收款码.png" alt="收款码" style="width:180px;height:180px;display:block;margin:8px auto;border-radius:6px;">
+        </div>
+    </div>
+</div>
+
+<!-- 快捷键列表 -->
+<div class="modal-overlay hidden" id="shortcutsModal">
+    <div class="modal-content modal-sm">
+        <div class="modal-header"><span>快捷键列表</span><button class="modal-close" data-modal="shortcutsModal">&times;</button></div>
+        <div class="modal-body">
+            <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                <tr><td style="padding:6px 8px;border-bottom:1px solid var(--border-light);"><kbd>Ctrl+N</kbd></td><td style="padding:6px 8px;border-bottom:1px solid var(--border-light);">新建会话</td></tr>
+                <tr><td style="padding:6px 8px;border-bottom:1px solid var(--border-light);"><kbd>Ctrl+W</kbd></td><td style="padding:6px 8px;border-bottom:1px solid var(--border-light);">关闭当前弹窗</td></tr>
+                <tr><td style="padding:6px 8px;border-bottom:1px solid var(--border-light);"><kbd>Ctrl+L</kbd></td><td style="padding:6px 8px;border-bottom:1px solid var(--border-light);">打开日志查看器</td></tr>
+                <tr><td style="padding:6px 8px;border-bottom:1px solid var(--border-light);"><kbd>Ctrl+,</kbd></td><td style="padding:6px 8px;border-bottom:1px solid var(--border-light);">打开设置</td></tr>
+                <tr><td style="padding:6px 8px;"><kbd>Esc</kbd></td><td style="padding:6px 8px;">关闭弹窗 / 取消批量删除</td></tr>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 软件使用方法 -->
+<div class="modal-overlay hidden" id="usageModal">
+    <div class="modal-content modal-sm">
+        <div class="modal-header"><span>软件使用方法</span><button class="modal-close" data-modal="usageModal">&times;</button></div>
+        <div class="modal-body">
+            <p>1. 点击菜单栏「文件」>「新建会话」启动新对话</p>
+            <p>2. 右键或点击「文件」>「会话重命名」修改历史会话标题</p>
+            <p>3. 左侧 Skills 区可按类别或字母顺序查看</p>
+            <p>4. 右侧会话区可展开、运行、重命名、删除历史会话</p>
+            <p>5. 「文件」>「批量删除会话」可勾选多个会话一次删除</p>
+            <p>6. 点击「+」新建 Profile，点击模型名可切换模型</p>
+        </div>
+    </div>
+</div>
+
+<!-- 新建 Profile -->
+<div class="modal-overlay hidden" id="newProfileModal">
+    <div class="modal-content modal-sm">
+        <div class="modal-header"><span>新建 Profile</span><button class="modal-close" data-modal="newProfileModal">&times;</button></div>
+        <div class="modal-body">
+            <input type="text" class="modal-input" id="newProfileName" placeholder="输入 Profile 名称" maxlength="20">
+            <button class="modal-confirm" id="confirmCreateProfile">创建</button>
+        </div>
+    </div>
+</div>
+
+<!-- 切换模型 -->
+<div class="modal-overlay hidden" id="modelModal">
+    <div class="modal-content modal-sm">
+        <div class="modal-header"><span>切换模型</span><button class="modal-close" data-modal="modelModal">&times;</button></div>
+        <div class="modal-body">
+            <input type="text" class="modal-input" id="modelInput" placeholder="输入模型名 (如 deepseek-v4-flash)">
+            <button class="modal-confirm" id="confirmModel">确认切换</button>
+        </div>
+    </div>
+</div>
+
+<!-- Skill 详情 -->
+<div class="modal-overlay hidden" id="skillModal">
+    <div class="modal-content modal-sm">
+        <div class="modal-header"><span id="skillModalTitle">Skill 详情</span><button class="modal-close" data-modal="skillModal">&times;</button></div>
+        <div class="modal-body" id="skillModalBody"></div>
+    </div>
+</div>
+
+<!-- MCP -->
+<div class="modal-overlay hidden" id="mcpModal">
+    <div class="modal-content modal-sm">
+        <div class="modal-header"><span>MCP 服务器</span><button class="modal-close" data-modal="mcpModal">&times;</button></div>
+        <div class="modal-body" id="mcpModalBody"></div>
+    </div>
+</div>
+
+<!-- Profile 管理 -->
+<div class="modal-overlay hidden" id="manageProfileModal">
+    <div class="modal-content modal-lg">
+        <div class="modal-header"><span>Profile 管理</span><button class="modal-close" data-modal="manageProfileModal">&times;</button></div>
+        <div class="modal-body" id="manageProfileBody"></div>
+    </div>
+</div>
+
+<!-- 日志查看器 -->
+<div class="modal-overlay hidden" id="logModal">
+    <div class="modal-content modal-lg">
+        <div class="modal-header">
+            <span>日志查看器</span>
+            <div class="log-controls">
+                <select class="log-select" id="logTypeSelect">
+                    <option value="agent">agent</option>
+                    <option value="errors">errors</option>
+                    <option value="gateway">gateway</option>
+                </select>
+                <button class="log-refresh-btn" id="logRefreshBtn">刷新</button>
+                <button class="modal-close" data-modal="logModal">&times;</button>
+            </div>
+        </div>
+        <div class="modal-body"><pre class="log-content" id="logContent">加载中...</pre></div>
+    </div>
+</div>
+
+<!-- 网络诊断 -->
+<div class="modal-overlay hidden" id="diagnoseModal">
+    <div class="modal-content modal-sm">
+        <div class="modal-header"><span>网络诊断</span><button class="modal-close" data-modal="diagnoseModal">&times;</button></div>
+        <div class="modal-body">
+            <div id="diagnoseBody">正在检测...</div>
+            <button class="modal-confirm" id="diagnoseRefreshBtn" style="margin-top:10px;">重新检测</button>
+        </div>
+    </div>
+</div>
+
+<!-- 检查更新 -->
+<div class="modal-overlay hidden" id="updateModal">
+    <div class="modal-content modal-sm">
+        <div class="modal-header"><span>检查更新</span><button class="modal-close" data-modal="updateModal">&times;</button></div>
+        <div class="modal-body" id="updateBody">正在检查...</div>
+    </div>
+</div>
+
+<!-- 常用指令 -->
+<div class="modal-overlay hidden" id="commandModal">
+    <div class="modal-content modal-cmd">
+        <div class="modal-header">
+            <span>常用指令</span>
+            <button class="modal-close" data-modal="commandModal">&times;</button>
+        </div>
+        <div class="modal-body" id="commandBody"></div>
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
