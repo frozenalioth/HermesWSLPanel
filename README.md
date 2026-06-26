@@ -1,8 +1,7 @@
 # Hermes WSL Panel
 
 > Hermes CLI 的 Windows 桌面启动器 —— 通过 WSL 管理 Hermes AI 代理
-
-![screenshot](docs/screenshot.png)
+Hermes WSL Panel 是 Hermes CLI 的 Windows 桌面启动器。通过 WSL 连接 Hermes AI 代理，提供 Profile 管理、会话浏览、常用指令一键复制、日志查看、主题切换等功能。首次启动自动检测 Hermes 路径，无需手动配置。适用于 Windows 10/11 + WSL 环境
 
 ## 功能
 
